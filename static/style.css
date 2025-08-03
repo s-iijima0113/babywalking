@@ -1,0 +1,10 @@
+body {
+    text-align: center;
+}
+
+form label {
+    display: inline-block;
+    margin-right: 20px;
+    cursor: pointer;
+    vertical-align: middle;
+}

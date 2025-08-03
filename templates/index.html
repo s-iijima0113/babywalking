@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お散歩アプリ</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <h1>Walking With Baby</h1>
+    <p>Enjoy your preciaus moment with baby!!</p>
+    <a href="/map">
+        <img src="/static/sample-map.png" alt="地図のサンプル" width="300"> 
+    </a>
+    <form method="POST" action="/search">
+        <div class="form-section">
+            <strong>Feel:</strong>
+            <label>
+                <input type="checkbox" name="feel">
+                meet-up
+            </label>
+            <label>
+                <input type="checkbox" name="feel">
+                cafe
+            </label>
+            <label>
+                <input type="checkbox" name="feel">
+                nature
+            </label>
+            <label>
+                <input type="checkbox" name="feel">
+                shopping
+            </label>
+        </div>
+        <div class="form-section">
+            <strong>others:</strong>
+            <label>
+                <input type="checkbox" name="facility">
+                baby toilets
+            </label>
+            <label>
+                <input type="checkbox" name="facility">
+                nursing room
+            </label>
+            <label>
+                <input type="checkbox" name="facility">
+                Saicoin
+            </label>
+            <label>
+                <input type="checkbox" name="facility">
+                Tamapon
+            </label>
+        </div>
+        <div class="form-section">
+            <strong>Walking Time (minutes):</strong>
+            <input type="range" name="walkTime" min="20" max="60" step="10"
+                oninput="this.nextElementSibling.value = this.value">
+            <output>30</output> minutes
+        </div>
+        <div class="form-section">
+            <strong>options:</strong>
+            <label>
+                <input type="checkbox" name="shade">
+                shade
+            </label>
+        </div>
+        <br>
+        <button type="submit">送信</button>
+    </form>
+</body>
+</html>

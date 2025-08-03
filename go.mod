@@ -1,3 +1,3 @@
-module go_app
+module babywalking
 
 go 1.24.4
