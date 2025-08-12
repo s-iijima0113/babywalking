@@ -5,51 +5,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>お散歩アプリ</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css" rel="stylesheet" />
     <link rel="stylesheet" href="/static/style.css">
+    
 </head>
 
 <body>
     <h1>Walking With Baby</h1>
     <p>Enjoy your preciaus moment with baby!!</p>
-    <a href="/map">
+    <div id="map"></div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic2F0b21paWkiLCJhIjoiY21kemViendyMGIzdzJrb2ltODFqZzdiZCJ9.oida2Ztmk9t7Gu7JQt1Qsw';
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [139.7670516, 35.6811673],
+            zoom: 15
+        });
+    </script>
+    <!--a href="/map">
         <img src="/static/sample-map.png" alt="地図のサンプル" width="300"> 
-    </a>
+    </a-->
     <form method="POST" action="/search">
         <div class="form-section">
             <strong>Feel:</strong>
             <label>
-                <input type="checkbox" name="feel">
+                <input type="checkbox" name="feel" value="meet-up">
                 meet-up
             </label>
             <label>
-                <input type="checkbox" name="feel">
+                <input type="checkbox" name="feel" value="cafe">
                 cafe
             </label>
             <label>
-                <input type="checkbox" name="feel">
+                <input type="checkbox" name="feel" value="nature">
                 nature
             </label>
             <label>
-                <input type="checkbox" name="feel">
+                <input type="checkbox" name="feel" value="shopping">
                 shopping
             </label>
         </div>
         <div class="form-section">
             <strong>others:</strong>
             <label>
-                <input type="checkbox" name="facility">
+                <input type="checkbox" name="facility" value="toilet">
                 baby toilets
             </label>
             <label>
-                <input type="checkbox" name="facility">
+                <input type="checkbox" name="facility" value="nursing">
                 nursing room
             </label>
             <label>
-                <input type="checkbox" name="facility">
+                <input type="checkbox" name="facility" value="saicoin">
                 Saicoin
             </label>
             <label>
-                <input type="checkbox" name="facility">
+                <input type="checkbox" name="facility" value="tamapon">
                 Tamapon
             </label>
         </div>
@@ -62,7 +76,7 @@
         <div class="form-section">
             <strong>options:</strong>
             <label>
-                <input type="checkbox" name="shade">
+                <input type="checkbox" name="shade" value="shade">
                 shade
             </label>
         </div>

@@ -1,5 +1,18 @@
+html{
+    height: 100%;
+    width: 100%;
+}
+
 body {
     text-align: center;
+    height: 100%;
+    width: 100%;
+    }
+
+
+#map{
+    height: 50%;
+    width: 50%;
 }
 
 form label {
@@ -8,3 +21,4 @@ form label {
     cursor: pointer;
     vertical-align: middle;
 }
+
