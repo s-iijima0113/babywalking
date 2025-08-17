@@ -1,0 +1,24 @@
+html{
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    text-align: center;
+    height: 100%;
+    width: 100%;
+    }
+
+#map{
+    height: 50%;
+    width: 50%;
+    margin: 0 auto;
+}
+
+form label {
+    display: inline-block;
+    margin-right: 20px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
