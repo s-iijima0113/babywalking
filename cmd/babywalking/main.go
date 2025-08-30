@@ -2,6 +2,7 @@ package main
 
 import (
 	"babywalking/internal/csv"
+	"babywalking/internal/db"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,9 +23,16 @@ func main() {
 		log.Fatalf("CSV読み込みエラー: %v", err)
 	}
 	// CSVの内容を表示
-	for _, record := range records {
-		log.Printf("CSVレコード: %v", record)
-	}
+	// for _, record := range records {
+	//log.Printf("CSVレコード: %v", records[1])
+	// }
+
+	// CSV編集
+	edited := csv.EditCSV(records)
+	log.Printf("CSVレコード: %v", edited)
+
+	//DB書き込み
+	db.AddDb(edited)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
