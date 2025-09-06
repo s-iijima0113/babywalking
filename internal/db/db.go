@@ -45,24 +45,9 @@ func AddDb(edited [][]string) {
 	}
 	fmt.Println("DBに接続しました")
 
-	//DBにデータが存在するかチェック
-	//Todo 後でバッチ処理にする
-	//main.goに移動
-	// var exists bool
-	// err = db.QueryRow(`SELECT EXISTS (SELECT 1 FROM baby_facilities)`).Scan(&exists)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// if exists {
-	// 	fmt.Println("すでにデータが存在するのでINSERTはスキップします")
-	// 	return
-	// }
-
 	//SQL
-	sql :=
-		`INSERT INTO baby_facilities (toilet, nursing, name, address, lat, lon, geom, amenities, source, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($6, $5), 4326)::geography, $7, $8, $9)`
+	sql := `INSERT INTO baby_facilities (name, toilet, nursing, others, features, postcode, address, lat, lng, geom, phone_number, opening_hours, regular_holidays, website, source, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($9, $8), 4326)::geography, $10, $11, $12, $13, $14, $15)`
 
 	//トランザクション開始
 	tx, err := db.Begin()
@@ -70,9 +55,6 @@ func AddDb(edited [][]string) {
 		log.Fatal(err)
 	}
 	defer tx.Rollback()
-
-	//Todo 暫定対応
-	amenities := "{}"
 
 	//データ挿入
 	for _, s := range edited {
@@ -90,20 +72,22 @@ func AddDb(edited [][]string) {
 
 		//insert
 		_, err = tx.Exec(sql,
-			toilet,  //toilet $1
-			nursing, //nursing $2
-			s[0],    //name $3
-			s[4],    //address $4
-			s[5],    //lat $5
-			s[6],    //lon $6
-			//s[7],        //geom
-			amenities,  //amenities
+			s[0],       //name
+			toilet,     //toilet
+			nursing,    //nursing
+			s[3],       //others
+			s[4],       //features
+			s[5],       //postCode
+			s[6],       //address
+			s[11],      //lat
+			s[12],      //lng
+			s[7],       //phone_number
+			s[8],       //opening_hours
+			s[9],       //regular_holidays
+			s[10],      //website
 			"official", //source
 			time.Now(), //updated_at
 		)
-		//fmt.Printf("%T %+v\n", s[1], s[1])
-		//fmt.Printf("raw toilet=%q nursing=%q\n", toilet, nursing)
-		//fmt.Printf("toilet=%T %v, nursing=%T %v\n", toilet, toilet, nursing, nursing)
 
 		if err != nil {
 			log.Fatal(err)

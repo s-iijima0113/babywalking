@@ -21,7 +21,7 @@ type Result struct {
 }
 
 // 国土地理院APIで住所を座標に変換する関数
-func GeocodeAddress(address string) (lat, lon float64, err error) {
+func GeocodeAddress(address string) (lat, lng float64, err error) {
 	//url := fmt.Sprintf("https://msearch.gsi.go.jp/address-search/AddressSearch?q=%s", address)
 	baseURL := "https://msearch.gsi.go.jp/address-search/AddressSearch?q="
 	encodedAddress := url.QueryEscape(address)
@@ -49,7 +49,7 @@ func GeocodeAddress(address string) (lat, lon float64, err error) {
 	}
 
 	// 経度・緯度を取り出す
-	lon = results[0].Geometry.Coordinates[0]
+	lng = results[0].Geometry.Coordinates[0]
 	lat = results[0].Geometry.Coordinates[1]
-	return lat, lon, nil
+	return lat, lng, nil
 }

@@ -62,7 +62,7 @@ func EditCSV(records [][]string) [][]string {
 
 		//12列目の住所を経緯度に変換
 		// ここに処理を追加
-		lat, lon, err := geocoding.GeocodeAddress(record[12])
+		lat, lng, err := geocoding.GeocodeAddress(record[12])
 		if err != nil {
 			// エラーハンドリング
 			continue
@@ -70,8 +70,8 @@ func EditCSV(records [][]string) [][]string {
 
 		// float64 → string に変換
 		latStr := strconv.FormatFloat(lat, 'f', 6, 64)
-		lonStr := strconv.FormatFloat(lon, 'f', 6, 64)
-		//fmt.Println(latStr, lonStr)
+		lngStr := strconv.FormatFloat(lng, 'f', 6, 64)
+		//fmt.Println(latStr, lngStr)
 
 		//必要な列のみ追加
 		//Todo特徴追加
@@ -79,11 +79,16 @@ func EditCSV(records [][]string) [][]string {
 			record[0],  //名称
 			record[3],  //赤ちゃんトイレ
 			record[4],  //授乳室
+			record[6],  //設備内容
+			record[9],  //特徴
 			record[10], //郵便番号
 			record[12], //住所
+			record[13], //電話番号
+			record[16], //営業時間
+			record[17], //定休日
+			record[18], //URL
 			latStr,     //経緯
-			lonStr,     //緯度
-			"amenity",  //Todo アメニティを取得したい
+			lngStr,     //緯度
 		})
 	}
 	return edited
