@@ -120,11 +120,12 @@ func AddDb(edited [][]string) {
 
 // MapBoxに渡すAPI作成
 type Facility struct {
-	ID   int     `json:"id"`
-	Type string  `json:"type"`
-	Lat  float64 `json:"lat"`
-	Lng  float64 `json:"lng"`
-	Name string  `json:"name"`
+	ID      int     `json:"id"`
+	Toilet  string  `json:"toilet"`
+	Nursing string  `json:"nursing"`
+	Lat     float64 `json:"lat"`
+	Lon     float64 `json:"lon"`
+	Name    string  `json:"name"`
 }
 
 func FacilityAPI() {
@@ -137,7 +138,7 @@ func FacilityAPI() {
 	defer db.Close()
 
 	http.HandleFunc("/api/facilities", func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT id, type, lat, lng, name FROM baby_facilities")
+		rows, err := db.Query("SELECT id, toilet, nursing, lat, lon, name FROM baby_facilities")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -147,7 +148,7 @@ func FacilityAPI() {
 		var facilities []Facility
 		for rows.Next() {
 			var f Facility
-			if err := rows.Scan(&f.ID, &f.Type, &f.Lat, &f.Lng, &f.Name); err != nil {
+			if err := rows.Scan(&f.ID, &f.Toilet, &f.Nursing, &f.Lat, &f.Lon, &f.Name); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

@@ -55,29 +55,29 @@
 
             allFacilities.forEach(facility => {
                 if (
-                    (facility.type.includes("toilet") && showToilet) ||
-                    (facility.type.includes("nursing") && showNursing)
+                    (facility.toilet.includes(true) && showToilet) ||
+                    (facility.nursing.includes(true) && showNursing)
                 ) {
                     const el = document.createElement('div');
                     el.style.width = '30px';
                     el.style.height = '30px';
                     el.style.backgroundSize = 'cover';
 
-                    if (facility.type.includes("toilet") && facility.type.includes("nursing")) {
+                    if (facility.toilet.includes(true) && facility.nursing.includes(true)) {
                     // 両方持つ施設ならアイコンを横に並べる
                     el.style.display = "flex";
                     el.innerHTML = `
                     <img src="./icon/toilet.png" style="width:15px;height:15px;">
                     <img src="./icon/nursing.png" style="width:15px;height:15px;">
                     `;
-                    } else if (facility.type.includes("toilet")) {
+                    } else if (facility.toilet.includes(true)) {
                         el.style.backgroundImage = 'url(./icon/toilet.png)';
-                    } else if (facility.type.includes("nursing")) {
+                    } else if (facility.nursing.includes(true)) {
                         el.style.backgroundImage = 'url(./icon/nursing.png)';
                     }
 
                     const marker = new mapboxgl.Marker(el)
-                        .setLngLat([facility.lng, facility.lat])
+                        .setLngLat([facility.lon, facility.lat])
                         .setPopup(new mapboxgl.Popup().setText(facility.name))
                         .addTo(map);
 
@@ -87,9 +87,10 @@
         }
 
         // チェックボックスにイベント追加
+        document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('toilet').addEventListener('change', updateMarkers);
         document.getElementById('nursing').addEventListener('change', updateMarkers);
-
+        });
         // 初回ロード
         loadFacilities();
         //   map.addControl(
