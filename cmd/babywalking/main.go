@@ -27,12 +27,23 @@ func main() {
 	//log.Printf("CSVレコード: %v", records[1])
 	// }
 
-	// CSV編集
-	edited := csv.EditCSV(records)
-	log.Printf("CSVレコード: %v", edited)
+	//DBにデータが存在するかチェック
+	//Todo 後でバッチ処理にする
+	var exists = db.CheckExists()
 
-	//DB書き込み
-	db.AddDb(edited)
+	if exists {
+		fmt.Println("すでにデータが存在するのでINSERTはスキップします")
+		//return
+	} else {
+		// CSV編集
+		edited := csv.EditCSV(records)
+		log.Printf("CSVレコード: %v", edited)
+
+		//DB書き込み
+		db.AddDb(edited)
+	}
+	//FacilitiesAPI実行
+	db.FacilityAPI()
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
