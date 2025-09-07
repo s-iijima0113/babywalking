@@ -76,9 +76,19 @@
                         el.style.backgroundImage = 'url(./icon/nursing.png)';
                     }
 
+                    const popupContent = `
+                        <strong>${facility.name}</strong><br>
+                        Address: ${facility.address}<br>
+                        Postcode: ${facility.postcode}<br>
+                        Phone: ${facility.phone_number}<br>
+                        Opening Hours: ${facility.opening_hours}<br>
+                        Regular Holidays: ${facility.regular_holidays}<br>
+                        Website: <a href="${facility.website}" target="_blank">${facility.website}</a>
+                        `;
+                    
                     const marker = new mapboxgl.Marker(el)
-                        .setLngLat([facility.lon, facility.lat])
-                        .setPopup(new mapboxgl.Popup().setText(facility.name))
+                        .setLngLat([facility.lng, facility.lat])
+                        .setPopup(new mapboxgl.Popup().setHTML(popupContent))
                         .addTo(map);
 
                     markers.push(marker);
