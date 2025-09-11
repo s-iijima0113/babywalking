@@ -12,7 +12,7 @@ import (
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
-// データの有無をチェック
+// facilitiesテーブルデータの有無をチェック
 func CheckExists() bool {
 	dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
 	db, err := sql.Open("postgres", dsn)
@@ -102,6 +102,80 @@ func AddDb(edited [][]string) {
 
 }
 
+// coinテーブルデータの有無をチェック
+func CheckExists_Coin() bool {
+	dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	var exists bool
+	//データチェック
+	err = db.QueryRow(`SELECT EXISTS (SELECT 1 FROM coins)`).Scan(&exists)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return exists
+}
+
+// オープンデータ（さいコイン・たまポン）登録
+func AddDb_Coin(edited [][]string) {
+	dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// DBに接続できるか確認
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("DBに接続しました")
+
+	//SQL
+	sql := `INSERT INTO coins (name, category, cointype, postcode, address, lat, lng, geom, phone_number, source, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_MakePoint($7, $6), 4326)::geography, $8, $9, $10)`
+
+	//トランザクション開始
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tx.Rollback()
+
+	//データ挿入
+	for _, s := range edited {
+
+		//insert
+		_, err = tx.Exec(sql,
+			s[0],       //name
+			s[1],       //category
+			s[2],       //cointype
+			s[3],       //postcode
+			s[4],       //address
+			s[6],       //lat
+			s[7],       //lng
+			s[5],       //phone_number
+			"official", //source
+			time.Now(), //updated_at
+		)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	//コミット
+	if err := tx.Commit(); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("データを挿入しました")
+
+}
+
 // MapBoxに渡すAPI作成
 type Facility struct {
 	ID              int     `json:"id"`
@@ -153,8 +227,8 @@ func FacilityAPI() {
 		json.NewEncoder(w).Encode(facilities)
 	})
 
-	log.Println("Server started at :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+	// log.Println("Server started at :8080")
+	// if err := http.ListenAndServe(":8080", nil); err != nil {
+	// 	log.Fatal("ListenAndServe: ", err)
+	// }
 }

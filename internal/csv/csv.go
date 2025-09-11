@@ -11,7 +11,7 @@ import (
 	"golang.org/x/text/transform"
 )
 
-// CSVを読み込む関数
+// CSV_赤ちゃんトイレ・授乳室を読み込む関数
 func ReadCSV(filePath string) ([][]string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -89,6 +89,69 @@ func EditCSV(records [][]string) [][]string {
 			record[18], //URL
 			latStr,     //経緯
 			lngStr,     //緯度
+		})
+	}
+	return edited
+}
+
+func ReadCSV_Coin(filePath string) ([][]string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Shift_JISエンコーディングのCSVを読み込む
+	reader := csv.NewReader(file)
+
+	//CSVを配列に格納
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	//全角スペースを半角スペースに置換
+	for i := range records {
+		for j := range records[i] {
+			records[i][j] = strings.ReplaceAll(records[i][j], "\u3000", " ")
+		}
+	}
+
+	return records, nil
+}
+
+func EditCSV_Coin(records [][]string) [][]string {
+
+	// ここで必要な加工を行う
+	edited := [][]string{}
+
+	//recordsの1行目はヘッダーなのでスキップ
+	for i, record := range records {
+		if i == 0 {
+			continue
+		}
+
+		//5列目の住所を経緯度に変換
+		lat, lng, err := geocoding.GeocodeAddress(record[4])
+		if err != nil {
+			// エラーハンドリング
+			continue
+		}
+
+		// float64 → string に変換
+		latStr := strconv.FormatFloat(lat, 'f', 6, 64)
+		lngStr := strconv.FormatFloat(lng, 'f', 6, 64)
+		//fmt.Println(latStr, lngStr)
+
+		edited = append(edited, []string{
+			record[0], //名称
+			record[1], //業種
+			record[2], //サービス
+			record[3], //郵便番号
+			record[4], //住所
+			record[5], //電話番号
+			latStr,    //経緯
+			lngStr,    //緯度
 		})
 	}
 	return edited

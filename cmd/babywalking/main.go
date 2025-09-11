@@ -17,33 +17,46 @@ func main() {
 	//http.HandleFunc("/", handler)
 	http.HandleFunc("/search", searchHandler)
 
-	//CSV読み込み
-	records, err := csv.ReadCSV("data/babyfacilities.csv")
-	if err != nil {
-		log.Fatalf("CSV読み込みエラー: %v", err)
-	}
-	// CSVの内容を表示
-	// for _, record := range records {
-	//log.Printf("CSVレコード: %v", records[1])
-	// }
-
-	//DBにデータが存在するかチェック
+	//facilitiesテーブルにデータが存在するかチェック
 	//Todo 後でバッチ処理にする
 	var exists = db.CheckExists()
-
 	if exists {
 		fmt.Println("すでにデータが存在するのでINSERTはスキップします")
-		//return
 	} else {
+		//CSV読み込み
+		records, err := csv.ReadCSV("data/babyfacilities.csv")
+		if err != nil {
+			log.Fatalf("CSV読み込みエラー: %v", err)
+		}
+
 		// CSV編集
 		edited := csv.EditCSV(records)
-		log.Printf("CSVレコード: %v", edited)
+		//log.Printf("CSVレコード: %v", edited)
 
 		//DB書き込み
 		db.AddDb(edited)
 	}
 	//FacilitiesAPI実行
 	db.FacilityAPI()
+
+	//Coinテーブルにデータが存在するかチェック
+	//Todo 後でバッチ処理にする
+	var exists_Coin = db.CheckExists_Coin()
+	if exists_Coin {
+		fmt.Println("すでにコインデータが存在するのでINSERTはスキップします")
+	} else {
+		//さいコイン、たまポンPDF読み込み
+		records, err := csv.ReadCSV_Coin("data/shop.csv")
+
+		if err != nil {
+			log.Fatalf("CSV読み込みエラー: %v", err)
+		}
+		// CSV編集
+		edited := csv.EditCSV_Coin(records)
+
+		//DB書き込み
+		db.AddDb_Coin(edited)
+	}
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
