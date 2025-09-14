@@ -134,6 +134,7 @@
 
                     const popupContent = `
                         <strong>${coin.name}</strong><br>
+                        category: ${coin.category}<br>
                         Address: ${coin.address}<br>
                         Postcode: ${coin.postcode}<br>
                         Phone: ${coin.phone_number}<br>
@@ -164,12 +165,13 @@
         //         })
         //     );
 
-        map.addControl(
-            new MapboxDirections({
-                accessToken: mapboxgl.accessToken
-            }),
-            'top-left'
-        );
+        //地図の右上に案内表示
+        // map.addControl(
+        //     new MapboxDirections({
+        //         accessToken: mapboxgl.accessToken
+        //     }),
+        //     'top-left'
+        // );
         // map.addControl(
         //         new MapboxGeocoder({
         //             accessToken: mapboxgl.accessToken,
