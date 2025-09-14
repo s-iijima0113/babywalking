@@ -33,16 +33,27 @@
         });
 
         //facilitiedAPI取得
-        let allFacilities = [];
+        let Facilities = [];
+        let coins = [];
         let markers = [];
 
-        function loadFacilities() {
-            fetch('/api/facilities')
-                .then(res => res.json())
-                .then(data => {
-                    allFacilities = data;
-                    updateMarkers();
-                });
+        // function loadFacilities() {
+        //     fetch('/api/facilities')
+        //         .then(res => res.json())
+        //         .then(data => {
+        //             allFacilities = data;
+        //             updateMarkers();
+        //         });
+        // }
+
+        async function loadFacilities() {
+            const resFacilities = await fetch('/api/facilities');
+            facilities = await resFacilities.json();
+
+            const resCoins = await fetch('/api/coins');
+            coins = await resCoins.json();
+
+            updateMarkers();
         }
 
         function updateMarkers() {
@@ -52,8 +63,10 @@
 
             const showToilet = document.getElementById('toilet').checked;
             const showNursing = document.getElementById('nursing').checked;
+            const showSaicoin = document.getElementById('saicoin').checked;
+            const showTamapon = document.getElementById('tamapon').checked;
 
-            allFacilities.forEach(facility => {
+            facilities.forEach(facility => {
                 if (
                     (facility.toilet.includes(true) && showToilet) ||
                     (facility.nursing.includes(true) && showNursing)
@@ -94,12 +107,54 @@
                     markers.push(marker);
                 }
             });
+
+            // coin施設のマーカー追加
+            coins.forEach(coin => {
+                if (
+                    showSaicoin && coin.cointype.includes('さいコイン') ||
+                    (showTamapon && coin.cointype.includes('たまポン'))
+                ) {
+                    const el = document.createElement('div');
+                    el.style.width = '30px';
+                    el.style.height = '30px';
+                    el.style.backgroundSize = 'cover';
+
+                    if (coin.cointype.includes('さいコイン') && coin.cointype.includes('たまポン')) {
+                        // 両方持つ施設ならアイコンを横に並べる
+                        el.style.display = "flex";
+                        el.innerHTML = `
+                    <img src="./icon/coin_green.png" style="width:15px;height:15px;">
+                    <img src="./icon/pint_green.png" style="width:15px;height:15px;">
+                    `;
+                    } else if (coin.cointype.includes('さいコイン')) {
+                        el.style.backgroundImage = 'url(./icon/coin_green.png)';
+                    } else if (coin.cointype.includes('たまポン')) {
+                        el.style.backgroundImage = 'url(./icon/pint_green.png)';
+                    }
+
+                    const popupContent = `
+                        <strong>${coin.name}</strong><br>
+                        Address: ${coin.address}<br>
+                        Postcode: ${coin.postcode}<br>
+                        Phone: ${coin.phone_number}<br>
+                        `;
+
+                    const marker = new mapboxgl.Marker(el)
+                        .setLngLat([coin.lng, coin.lat])
+                        .setPopup(new mapboxgl.Popup().setHTML(popupContent))
+                        .addTo(map);
+
+                    markers.push(marker);
+                }
+            });
         }
 
         // チェックボックスにイベント追加
         document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('toilet').addEventListener('change', updateMarkers);
         document.getElementById('nursing').addEventListener('change', updateMarkers);
+        document.getElementById('saicoin').addEventListener('change', updateMarkers);
+        document.getElementById('tamapon').addEventListener('change', updateMarkers);
         });
         // 初回ロード
         loadFacilities();
@@ -163,6 +218,18 @@
                 <input type="checkbox" id="tamapon" name="facility" value="tamapon">
                 Tamapon
             </label>
+            <!-- <label>
+                <input type="checkbox" id="hurusato-tamapon" name="facility" value="hurusato-tamapon">
+                Hurisato-Tamapon
+            </label>
+            <label>
+                <input type="checkbox" id="shussan-kosodate" name="facility" value="shussan-kosodate">
+                Shussan-Kosodate
+            </label>
+            <label>
+                <input type="checkbox" id="gentei" name="facility" value="gentei">
+                Gentei
+            </label> -->
         </div>
         <div class="form-section">
             <strong>Walking Time (minutes):</strong>

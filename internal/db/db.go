@@ -32,13 +32,6 @@ func InitDB() {
 
 // facilitiesテーブルデータの有無をチェック
 func CheckExists() bool {
-	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	// db, err := sql.Open("postgres", dsn)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer db.Close()
-
 	var exists bool
 	//データチェック
 	err := DB.QueryRow(`SELECT EXISTS (SELECT 1 FROM baby_facilities)`).Scan(&exists)
@@ -50,19 +43,6 @@ func CheckExists() bool {
 
 // オープンデータ（赤ちゃんの駅）登録
 func AddDb(edited [][]string) {
-	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	// db, err := sql.Open("postgres", dsn)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer db.Close()
-
-	// // DBに接続できるか確認
-	// if err := db.Ping(); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println("DBに接続しました")
-
 	//SQL
 	sql := `INSERT INTO baby_facilities (name, toilet, nursing, others, features, postcode, address, lat, lng, geom, phone_number, opening_hours, regular_holidays, website, source, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($9, $8), 4326)::geography, $10, $11, $12, $13, $14, $15)`
@@ -122,13 +102,6 @@ func AddDb(edited [][]string) {
 
 // coinテーブルデータの有無をチェック
 func CheckExists_Coin() bool {
-	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	// db, err := sql.Open("postgres", dsn)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer db.Close()
-
 	var exists bool
 	//データチェック
 	err := DB.QueryRow(`SELECT EXISTS (SELECT 1 FROM coins)`).Scan(&exists)
@@ -140,19 +113,6 @@ func CheckExists_Coin() bool {
 
 // オープンデータ（さいコイン・たまポン）登録
 func AddDb_Coin(edited [][]string) {
-	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	// db, err := sql.Open("postgres", dsn)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer db.Close()
-
-	// DBに接続できるか確認
-	if err := DB.Ping(); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("DBに接続しました")
-
 	//SQL
 	sql := `INSERT INTO coins (name, category, cointype, postcode, address, lat, lng, geom, phone_number, source, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_MakePoint($7, $6), 4326)::geography, $8, $9, $10)`
@@ -213,14 +173,6 @@ type Facility struct {
 }
 
 func FacilityAPI() {
-	// DB接続
-	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	// db, err := sql.Open("postgres", dsn)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer db.Close()
-
 	http.HandleFunc("/api/facilities", func(w http.ResponseWriter, r *http.Request) {
 		rows, err := DB.Query("SELECT id, toilet, nursing, lat, lng, name, others, features, postcode, address, phone_number, opening_hours, regular_holidays, website FROM baby_facilities")
 		if err != nil {
@@ -244,9 +196,42 @@ func FacilityAPI() {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(facilities)
 	})
+}
 
-	// log.Println("Server started at :8080")
-	// if err := http.ListenAndServe(":8080", nil); err != nil {
-	// 	log.Fatal("ListenAndServe: ", err)
-	// }
+// coinsテーブル用の構造体
+type Coin struct {
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Category    string  `json:"category"`
+	Cointype    string  `json:"cointype"`
+	Postcode    string  `json:"postcode"`
+	Address     string  `json:"address"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+	Geom        string  `json:"geom"`
+	PhoneNumber string  `json:"phone_number"`
+}
+
+func CoinAPI() {
+	http.HandleFunc("/api/coins", func(w http.ResponseWriter, r *http.Request) {
+		rows, err := DB.Query("SELECT id, name, category, cointype, postcode, address, lat, lng, geom, phone_number FROM coins")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var coins []Coin
+		for rows.Next() {
+			var c Coin
+			if err := rows.Scan(&c.ID, &c.Name, &c.Category, &c.Cointype, &c.Postcode, &c.Address, &c.Lat, &c.Lng, &c.Geom, &c.PhoneNumber); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			coins = append(coins, c)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(coins)
+	})
 }

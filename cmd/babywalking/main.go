@@ -66,6 +66,9 @@ func main() {
 	//FacilitiesAPI実行
 	db.FacilityAPI()
 
+	//CoinAPI実行
+	db.CoinAPI()
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
