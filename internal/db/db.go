@@ -12,18 +12,36 @@ import (
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
-// facilitiesテーブルデータの有無をチェック
-func CheckExists() bool {
+var DB *sql.DB
+
+// DB初期化
+func InitDB() {
 	dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	db, err := sql.Open("postgres", dsn)
+	var err error
+	DB, err = sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+
+	if err := DB.Ping(); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("DBに接続しました")
+}
+
+// facilitiesテーブルデータの有無をチェック
+func CheckExists() bool {
+	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
+	// db, err := sql.Open("postgres", dsn)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer db.Close()
 
 	var exists bool
 	//データチェック
-	err = db.QueryRow(`SELECT EXISTS (SELECT 1 FROM baby_facilities)`).Scan(&exists)
+	err := DB.QueryRow(`SELECT EXISTS (SELECT 1 FROM baby_facilities)`).Scan(&exists)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,25 +50,25 @@ func CheckExists() bool {
 
 // オープンデータ（赤ちゃんの駅）登録
 func AddDb(edited [][]string) {
-	dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
+	// db, err := sql.Open("postgres", dsn)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer db.Close()
 
-	// DBに接続できるか確認
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("DBに接続しました")
+	// // DBに接続できるか確認
+	// if err := db.Ping(); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println("DBに接続しました")
 
 	//SQL
 	sql := `INSERT INTO baby_facilities (name, toilet, nursing, others, features, postcode, address, lat, lng, geom, phone_number, opening_hours, regular_holidays, website, source, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($9, $8), 4326)::geography, $10, $11, $12, $13, $14, $15)`
 
 	//トランザクション開始
-	tx, err := db.Begin()
+	tx, err := DB.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,16 +122,16 @@ func AddDb(edited [][]string) {
 
 // coinテーブルデータの有無をチェック
 func CheckExists_Coin() bool {
-	dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
+	// db, err := sql.Open("postgres", dsn)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer db.Close()
 
 	var exists bool
 	//データチェック
-	err = db.QueryRow(`SELECT EXISTS (SELECT 1 FROM coins)`).Scan(&exists)
+	err := DB.QueryRow(`SELECT EXISTS (SELECT 1 FROM coins)`).Scan(&exists)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,15 +140,15 @@ func CheckExists_Coin() bool {
 
 // オープンデータ（さいコイン・たまポン）登録
 func AddDb_Coin(edited [][]string) {
-	dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
+	// db, err := sql.Open("postgres", dsn)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer db.Close()
 
 	// DBに接続できるか確認
-	if err := db.Ping(); err != nil {
+	if err := DB.Ping(); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("DBに接続しました")
@@ -140,7 +158,7 @@ func AddDb_Coin(edited [][]string) {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_MakePoint($7, $6), 4326)::geography, $8, $9, $10)`
 
 	//トランザクション開始
-	tx, err := db.Begin()
+	tx, err := DB.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -196,15 +214,15 @@ type Facility struct {
 
 func FacilityAPI() {
 	// DB接続
-	dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// dsn := "host=localhost port=5432 user=postgres password=password dbname=babywalking sslmode=disable"
+	// db, err := sql.Open("postgres", dsn)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer db.Close()
 
 	http.HandleFunc("/api/facilities", func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT id, toilet, nursing, lat, lng, name, others, features, postcode, address, phone_number, opening_hours, regular_holidays, website FROM baby_facilities")
+		rows, err := DB.Query("SELECT id, toilet, nursing, lat, lng, name, others, features, postcode, address, phone_number, opening_hours, regular_holidays, website FROM baby_facilities")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

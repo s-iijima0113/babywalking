@@ -17,6 +17,11 @@ func main() {
 	//http.HandleFunc("/", handler)
 	http.HandleFunc("/search", searchHandler)
 
+	//DB接続
+	db.InitDB()
+	//アプリ終了時にDB切断
+	defer db.DB.Close()
+
 	//facilitiesテーブルにデータが存在するかチェック
 	//Todo 後でバッチ処理にする
 	var exists = db.CheckExists()
@@ -36,8 +41,8 @@ func main() {
 		//DB書き込み
 		db.AddDb(edited)
 	}
-	//FacilitiesAPI実行
-	db.FacilityAPI()
+	// //FacilitiesAPI実行
+	// db.FacilityAPI()
 
 	//Coinテーブルにデータが存在するかチェック
 	//Todo 後でバッチ処理にする
@@ -57,6 +62,9 @@ func main() {
 		//DB書き込み
 		db.AddDb_Coin(edited)
 	}
+
+	//FacilitiesAPI実行
+	db.FacilityAPI()
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
