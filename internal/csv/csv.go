@@ -94,6 +94,61 @@ func EditCSV(records [][]string) [][]string {
 	return edited
 }
 
+// CSV_カフェを読み込む関数
+func ReadCSV_Cafe(filePath string) ([][]string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Shift_JISエンコーディングのCSVを読み込む
+	reader := csv.NewReader(transform.NewReader(file, japanese.ShiftJIS.NewDecoder()))
+	//CSVを配列に格納
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return records, nil
+}
+
+func EditCSV_Cafe(records [][]string) [][]string {
+
+	// ここで必要な加工を行う
+	edited := [][]string{}
+	//recordsの1行目はヘッダーなのでスキップ
+	for i, record := range records {
+		if i == 0 {
+			continue
+		}
+		//5列目の住所を経緯度に変換
+		lat, lng, err := geocoding.GeocodeAddress(record[5])
+		if err != nil {
+			// エラーハンドリング
+			continue
+		}
+		// float64 → string に変換
+		latStr := strconv.FormatFloat(lat, 'f', 6, 64)
+		lngStr := strconv.FormatFloat(lng, 'f', 6, 64)
+		//fmt.Println(latStr, lngStr)
+		edited = append(edited, []string{
+			record[2],  //名称
+			record[3],  //郵便番号
+			record[5],  //住所
+			record[6],  //電話番号
+			record[9],  //営業時間
+			record[10], //定休日
+			record[11], //URL
+			record[0],  //特典内容
+			latStr,     //経緯
+			lngStr,     //緯度
+		})
+	}
+	return edited
+}
+
+// CSV_さいコイン、たまポンを読み込む関数
 func ReadCSV_Coin(filePath string) ([][]string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {

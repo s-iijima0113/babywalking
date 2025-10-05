@@ -100,6 +100,61 @@ func AddDb(edited [][]string) {
 
 }
 
+// cafeテーブルデータの有無をチェック
+func CheckExists_Cafe() bool {
+	var exists bool
+	//データチェック
+	err := DB.QueryRow(`SELECT EXISTS (SELECT 1 FROM cafes)`).Scan(&exists)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return exists
+}
+
+// オープンデータ（カフェ）登録
+func AddDb_Cafe(edited [][]string) {
+	//SQL
+	sql := `INSERT INTO cafes (name, postcode, address, lat, lng, geom, phone_number, opening_hours, regular_holidays, website, benefit, source, updated_at)
+		VALUES ($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($5, $4), 4326)::geography, $6, $7, $8, $9, $10, $11, $12)`
+	//トランザクション開始
+	tx, err := DB.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tx.Rollback()
+
+	//データ挿入
+	for _, s := range edited {
+
+		//insert
+		_, err = tx.Exec(sql,
+			s[0],       //name
+			s[1],       //postcode
+			s[2],       //address
+			s[8],       //lat
+			s[9],       //lng
+			s[3],       //phone_number
+			s[4],       //opening_hours
+			s[5],       //regular_holidays
+			s[6],       //website
+			s[7],       //benefit
+			"official", //source
+			time.Now(), //updated_at
+		)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	//コミット
+	if err := tx.Commit(); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("cafesデータを挿入しました")
+
+}
+
 // coinテーブルデータの有無をチェック
 func CheckExists_Coin() bool {
 	var exists bool
