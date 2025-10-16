@@ -28,13 +28,42 @@ p {
 }
 
 #map {
-    width: min(90vw, 360px);
-    max-width: 360px;
+    width: min(90vw, 960px);
     height: min(65vh, 640px);
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 12px 32px rgba(31, 71, 136, 0.18);
-    margin: 0 auto;
+}
+
+.route-message {
+    width: min(90vw, 960px);
+    min-height: 1.5rem;
+    font-weight: 600;
+    color: #0f5ba5;
+    margin: -12px 0 12px;
+}
+
+.route-message--error {
+    color: #c0392b;
+}
+
+form {
+    width: min(90vw, 960px);
+    padding: 24px 24px 32px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 18px 45px rgba(27, 42, 75, 0.12);
+    text-align: left;
+}
+
+form strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.form-section {
+    margin-bottom: 20px;
 }
 
 .route-message {
@@ -127,7 +156,6 @@ form label {
     align-items: center;
     gap: 6px;
     margin-right: 16px;
-    margin-bottom: 10px;
     cursor: pointer;
     font-size: 0.95rem;
 }
@@ -150,7 +178,6 @@ button[type="submit"] {
     box-shadow: 0 10px 25px rgba(69, 125, 247, 0.25);
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    margin: 8px 0 0;
 }
 
 button[type="submit"]:hover {
@@ -170,25 +197,9 @@ button[type="submit"]:active {
         margin-bottom: 8px;
     }
 
-    form .form-row {
-        width: 100%;
-        gap: 12px;
-    }
-
     button[type="submit"] {
         width: 100%;
         justify-content: center;
-        margin-top: 12px;
-    }
-
-    .form-actions {
-        justify-content: center;
-    }
-}
-
-@media (max-width: 520px) {
-    .checkbox-list {
-        grid-template-columns: 1fr;
     }
 }
 
