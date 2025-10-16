@@ -5,6 +5,26 @@ let directionsControl;
 let mapLoaded = false;
 let fallbackDestinationMarker;
 
+const directionsControl = new MapboxDirections({
+    accessToken: mapboxgl.accessToken,
+    unit: 'metric',
+    profile: 'mapbox/walking',
+    alternatives: false,
+    controls: {
+        inputs: false,
+        instructions: true
+    },
+    language: 'ja'
+});
+
+let mapLoaded = false;
+
+map.on('load', () => {
+    mapLoaded = true;
+    map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
+    map.addControl(directionsControl, 'top-right');
+});
+
 //facilitiedAPI取得
 let facilities = [];
 let coins = [];
