@@ -1,36 +1,59 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoic2F0b21paWkiLCJhIjoiY21kemViendyMGIzdzJrb2ltODFqZzdiZCJ9.oida2Ztmk9t7Gu7JQt1Qsw';
-var map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v11',
-    center: [139.647238, 35.86236], //自宅
-    zoom: 15
-});
+
+let map;
+let directionsControl;
+let mapLoaded = false;
 
 //facilitiedAPI取得
-let Facilities = [];
+let facilities = [];
 let coins = [];
 let markers = [];
 
+let routeMessageElement;
+
+function updateRouteMessage(message, isError = false) {
+    if (!routeMessageElement) {
+        return;
+    }
+    routeMessageElement.textContent = message;
+    routeMessageElement.classList.toggle('route-message--error', Boolean(isError));
+}
 
 async function loadFacilities() {
-    const resFacilities = await fetch('/api/facilities');
-    facilities = await resFacilities.json();
+    try {
+        const [resFacilities, resCoins] = await Promise.all([
+            fetch('/api/facilities'),
+            fetch('/api/coins')
+        ]);
 
-    const resCoins = await fetch('/api/coins');
-    coins = await resCoins.json();
+        if (!resFacilities.ok) {
+            throw new Error('facilities API error');
+        }
+        if (!resCoins.ok) {
+            throw new Error('coins API error');
+        }
 
-    updateMarkers();
+        facilities = await resFacilities.json();
+        coins = await resCoins.json();
+        updateMarkers();
+    } catch (error) {
+        console.error('データの取得に失敗しました', error);
+        updateRouteMessage('データの取得に失敗しました。時間をおいて再度お試しください。', true);
+    }
 }
 
 function updateMarkers() {
+    if (!map) {
+        return;
+    }
     // 古いマーカー削除
     markers.forEach(m => m.remove());
     markers = [];
 
-    const showToilet = document.getElementById('toilet').checked;
-    const showNursing = document.getElementById('nursing').checked;
-    const showSaicoin = document.getElementById('saicoin').checked;
-    const showTamapon = document.getElementById('tamapon').checked;
+    const showToilet = isChecked('toilet');
+    const showNursing = isChecked('nursing');
+    const showSaicoin = isChecked('saicoin');
+    const showTamapon = isChecked('tamapon');
 
     facilities.forEach(facility => {
         if (
@@ -116,24 +139,165 @@ function updateMarkers() {
     });
 }
 
-// チェックボックスにイベント追加
-document.addEventListener("DOMContentLoaded", () => {
-document.getElementById('toilet').addEventListener('change', updateMarkers);
-document.getElementById('nursing').addEventListener('change', updateMarkers);
-document.getElementById('saicoin').addEventListener('change', updateMarkers);
-document.getElementById('tamapon').addEventListener('change', updateMarkers);
+function isChecked(id) {
+    const element = document.getElementById(id);
+    return Boolean(element && element.checked);
+}
+
+function interpretBoolean(value) {
+    if (Array.isArray(value)) {
+        return value.some(interpretBoolean);
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return false;
+    }
+    const normalized = String(value).toLowerCase();
+    return normalized.includes('true') || normalized === '1' || normalized === 'yes';
+}
+
+function matchesFacilityPreference(facility, preference) {
+    if (!facility) return false;
+    switch (preference) {
+        case 'toilet':
+            return interpretBoolean(facility.toilet);
+        case 'nursing':
+            return interpretBoolean(facility.nursing);
+        default:
+            return false;
+    }
+}
+
+function matchesCoinPreference(coin, preference) {
+    if (!coin || !coin.cointype) return false;
+    if (preference === 'saicoin') {
+        return coin.cointype.includes('さいコイン') || coin.cointype.toLowerCase().includes('saicoin');
+    }
+    if (preference === 'tamapon') {
+        return coin.cointype.includes('たまポン') || coin.cointype.toLowerCase().includes('tamapon');
+    }
+    return false;
+}
+
+function findDestination(formData) {
+    const facilityPreferences = formData.getAll('facility');
+    const facilityTargets = facilityPreferences.filter(pref => pref === 'toilet' || pref === 'nursing');
+    const coinTargets = facilityPreferences.filter(pref => pref === 'saicoin' || pref === 'tamapon');
+
+    if (facilityTargets.length) {
+        const matchedFacility = facilities.find(facility =>
+            facilityTargets.some(pref => matchesFacilityPreference(facility, pref))
+        );
+        if (matchedFacility) {
+            return { type: 'facility', data: matchedFacility };
+        }
+    }
+
+    if (coinTargets.length) {
+        const matchedCoin = coins.find(coin =>
+            coinTargets.some(pref => matchesCoinPreference(coin, pref))
+        );
+        if (matchedCoin) {
+            return { type: 'coin', data: matchedCoin };
+        }
+    }
+
+    if (facilities.length) {
+        return { type: 'facility', data: facilities[0] };
+    }
+    if (coins.length) {
+        return { type: 'coin', data: coins[0] };
+    }
+    return null;
+}
+
+function handleFormSubmit(event) {
+    event.preventDefault();
+
+    if (!mapLoaded) {
+        updateRouteMessage('地図を準備しています。少し待ってから再度お試しください。', true);
+        return;
+    }
+
+    const formData = new FormData(event.target);
+    const destinationResult = findDestination(formData);
+
+    if (!destinationResult) {
+        updateRouteMessage('表示できるルートが見つかりませんでした。', true);
+        return;
+    }
+
+    const { type, data } = destinationResult;
+    const lng = Number(data.lng);
+    const lat = Number(data.lat);
+
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+        updateRouteMessage('目的地の位置情報を取得できませんでした。', true);
+        return;
+    }
+
+    const origin = map.getCenter();
+    directionsControl.setOrigin([origin.lng, origin.lat]);
+    directionsControl.setDestination([lng, lat]);
+
+    const label = type === 'coin' ? data.name : data.name || 'スポット';
+    updateRouteMessage(`${label} までの徒歩ルートを表示しました。`);
+
+    map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15) });
+}
+
+// チェックボックスとフォームにイベント追加
+document.addEventListener('DOMContentLoaded', () => {
+    routeMessageElement = document.getElementById('route-message');
+
+    map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [139.647238, 35.86236], //自宅
+        zoom: 15
+    });
+
+    directionsControl = new MapboxDirections({
+        accessToken: mapboxgl.accessToken,
+        unit: 'metric',
+        profile: 'mapbox/walking',
+        alternatives: false,
+        controls: {
+            inputs: false,
+            instructions: true
+        },
+        language: 'ja'
+    });
+
+    map.on('load', () => {
+        mapLoaded = true;
+        map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
+        map.addControl(directionsControl, 'top-right');
+        map.resize();
+    });
+
+    window.addEventListener('resize', () => {
+        if (mapLoaded) {
+            map.resize();
+        }
+    });
+
+    updateRouteMessage('条件を選んで「送信」を押すと、お散歩ルートが地図に表示されます。');
+
+    const checkboxIds = ['toilet', 'nursing', 'saicoin', 'tamapon'];
+    checkboxIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', updateMarkers);
+        }
+    });
+
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
+    }
+
+    loadFacilities();
 });
-// 初回ロード
-loadFacilities();
-
-
-//地図の右上に案内表示
-// map.addControl(
-//     new MapboxDirections({
-//         accessToken: mapboxgl.accessToken
-//     }),
-//     'top-left'
-// );
-
-// 言語設定を日本語に変更
-map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
