@@ -1,10 +1,9 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoic2F0b21paWkiLCJhIjoiY21kemViendyMGIzdzJrb2ltODFqZzdiZCJ9.oida2Ztmk9t7Gu7JQt1Qsw';
-const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v11',
-    center: [139.647238, 35.86236], //自宅
-    zoom: 15
-});
+
+let map;
+let directionsControl;
+let mapLoaded = false;
+let fallbackDestinationMarker;
 
 const directionsControl = new MapboxDirections({
     accessToken: mapboxgl.accessToken,
@@ -31,7 +30,7 @@ let facilities = [];
 let coins = [];
 let markers = [];
 
-const routeMessageElement = document.getElementById('route-message');
+let routeMessageElement;
 
 function updateRouteMessage(message, isError = false) {
     if (!routeMessageElement) {
@@ -161,6 +160,11 @@ function updateMarkers() {
     });
 }
 
+function isChecked(id) {
+    const element = document.getElementById(id);
+    return Boolean(element && element.checked);
+}
+
 function interpretBoolean(value) {
     if (Array.isArray(value)) {
         return value.some(interpretBoolean);
@@ -230,6 +234,13 @@ function findDestination(formData) {
     return null;
 }
 
+function clearFallbackMarker() {
+    if (fallbackDestinationMarker) {
+        fallbackDestinationMarker.remove();
+        fallbackDestinationMarker = null;
+    }
+}
+
 function handleFormSubmit(event) {
     event.preventDefault();
 
@@ -255,18 +266,81 @@ function handleFormSubmit(event) {
         return;
     }
 
-    const origin = map.getCenter();
-    directionsControl.setOrigin([origin.lng, origin.lat]);
-    directionsControl.setDestination([lng, lat]);
-
     const label = type === 'coin' ? data.name : data.name || 'スポット';
-    updateRouteMessage(`${label} までの徒歩ルートを表示しました。`);
+
+    const origin = map.getCenter();
+    const canUseDirections = directionsControl &&
+        typeof directionsControl.setOrigin === 'function' &&
+        typeof directionsControl.setDestination === 'function';
+
+    if (canUseDirections) {
+        directionsControl.setOrigin([origin.lng, origin.lat]);
+        directionsControl.setDestination([lng, lat]);
+        clearFallbackMarker();
+        updateRouteMessage(`${label} までの徒歩ルートを表示しました。`);
+    } else {
+        clearFallbackMarker();
+        fallbackDestinationMarker = new mapboxgl.Marker()
+            .setLngLat([lng, lat])
+            .addTo(map);
+        updateRouteMessage(`${label} の位置を地図に表示しました。`);
+    }
 
     map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15) });
 }
 
 // チェックボックスとフォームにイベント追加
 document.addEventListener('DOMContentLoaded', () => {
+    routeMessageElement = document.getElementById('route-message');
+
+    map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [139.647238, 35.86236], //自宅
+        zoom: 15
+    });
+
+    if (typeof MapboxDirections === 'function') {
+        directionsControl = new MapboxDirections({
+            accessToken: mapboxgl.accessToken,
+            unit: 'metric',
+            profile: 'mapbox/walking',
+            alternatives: false,
+            controls: {
+                inputs: false,
+                instructions: true
+            },
+            language: 'ja'
+        });
+    } else {
+        directionsControl = null;
+        console.warn('MapboxDirections が読み込めなかったため、ルート表示をマーカーに切り替えます。');
+    }
+
+    map.on('load', () => {
+        mapLoaded = true;
+        try {
+            map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
+        } catch (error) {
+            console.warn('MapboxLanguage の読み込みに失敗しました。', error);
+        }
+        if (directionsControl) {
+            try {
+                map.addControl(directionsControl, 'top-right');
+            } catch (error) {
+                console.warn('MapboxDirections のコントロール追加に失敗しました。', error);
+                directionsControl = null;
+            }
+        }
+        map.resize();
+    });
+
+    window.addEventListener('resize', () => {
+        if (mapLoaded) {
+            map.resize();
+        }
+    });
+
     updateRouteMessage('条件を選んで「送信」を押すと、お散歩ルートが地図に表示されます。');
 
     const checkboxIds = ['toilet', 'nursing', 'saicoin', 'tamapon'];

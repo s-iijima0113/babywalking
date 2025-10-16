@@ -19,72 +19,79 @@
         href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.css"
         type="text/css" />
 
-    <h1>Walking With Baby</h1>
-    <p>Enjoy your preciaus moment with baby!!</p>
-        
-    <div id="map" aria-label="お散歩ルートの地図"></div>
-    <p id="route-message" class="route-message" aria-live="polite"></p>
-    <form method="POST" action="/search">
-        <div class="form-row">
-            <div class="form-section filters-group">
-                <strong>Feel:</strong>
-                <div class="checkbox-list">
-                    <label>
-                        <input type="checkbox" name="feel" value="meet-up">
-                        meet-up
-                    </label>
-                    <label>
-                        <input type="checkbox" name="feel" value="cafe">
-                        cafe
-                    </label>
-                    <label>
-                        <input type="checkbox" name="feel" value="nature">
-                        nature
-                    </label>
-                    <label>
-                        <input type="checkbox" name="feel" value="shopping">
-                        shopping
-                    </label>
+    <div class="page">
+        <header class="page-header">
+            <h1>Walking With Baby</h1>
+            <p>Enjoy your preciaus moment with baby!!</p>
+        </header>
+
+        <section class="map-panel" aria-label="お散歩ルートの地図">
+            <div id="map"></div>
+            <p id="route-message" class="route-message" aria-live="polite"></p>
+        </section>
+
+        <form method="POST" action="/search">
+            <div class="filters-stack">
+                <div class="form-section filters-group">
+                    <strong>Feel:</strong>
+                    <div class="checkbox-list">
+                        <label>
+                            <input type="checkbox" name="feel" value="meet-up">
+                            meet-up
+                        </label>
+                        <label>
+                            <input type="checkbox" name="feel" value="cafe">
+                            cafe
+                        </label>
+                        <label>
+                            <input type="checkbox" name="feel" value="nature">
+                            nature
+                        </label>
+                        <label>
+                            <input type="checkbox" name="feel" value="shopping">
+                            shopping
+                        </label>
+                    </div>
+                </div>
+                <div class="form-section filters-group">
+                    <strong>Other:</strong>
+                    <div class="checkbox-list">
+                        <label>
+                            <input type="checkbox" id="toilet" name="facility" value="toilet">
+                            baby toilets
+                        </label>
+                        <label>
+                            <input type="checkbox" id="nursing" name="facility" value="nursing">
+                            nursing room
+                        </label>
+                        <label>
+                            <input type="checkbox" id="saicoin" name="facility" value="saicoin">
+                            Saicoin
+                        </label>
+                        <label>
+                            <input type="checkbox" id="tamapon" name="facility" value="tamapon">
+                            Tamapon
+                        </label>
+                    </div>
                 </div>
             </div>
-            <div class="form-section filters-group">
-                <strong>Other:</strong>
-                <div class="checkbox-list">
-                    <label>
-                        <input type="checkbox" id="toilet" name="facility" value="toilet">
-                        baby toilets
-                    </label>
-                    <label>
-                        <input type="checkbox" id="nursing" name="facility" value="nursing">
-                        nursing room
-                    </label>
-                    <label>
-                        <input type="checkbox" id="saicoin" name="facility" value="saicoin">
-                        Saicoin
-                    </label>
-                    <label>
-                        <input type="checkbox" id="tamapon" name="facility" value="tamapon">
-                        Tamapon
-                    </label>
-                </div>
+            <div class="form-section">
+                <strong>Walking Time (minutes):</strong>
+                <input type="range" name="walkTime" min="20" max="60" step="10"
+                    oninput="this.nextElementSibling.value = this.value">
+                <output>30</output> minutes
             </div>
-        </div>
-        <div class="form-section">
-            <strong>Walking Time (minutes):</strong>
-            <input type="range" name="walkTime" min="20" max="60" step="10"
-                oninput="this.nextElementSibling.value = this.value">
-            <output>30</output> minutes
-        </div>
-        <div class="form-section">
-            <strong>options:</strong>
-            <label>
-                <input type="checkbox" name="shade" value="shade">
-                shade
-            </label>
-        </div>
-        <div class="form-actions">
-            <button type="submit">送信</button>
-        </div>
-    </form>
+            <div class="form-section">
+                <strong>options:</strong>
+                <label>
+                    <input type="checkbox" name="shade" value="shade">
+                    shade
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit">送信</button>
+            </div>
+        </form>
+    </div>
 </body>
 </html>
