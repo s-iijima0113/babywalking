@@ -66,6 +66,91 @@ form strong {
     margin-bottom: 20px;
 }
 
+.route-message {
+    width: min(90vw, 360px);
+    max-width: 360px;
+    min-height: 1.5rem;
+    font-weight: 600;
+    color: #0f5ba5;
+    margin: -12px auto 12px;
+}
+
+.route-message--error {
+    color: #c0392b;
+}
+
+form {
+    width: min(90vw, 360px);
+    max-width: 360px;
+    padding: 24px 20px 32px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 18px 45px rgba(27, 42, 75, 0.12);
+    text-align: left;
+    box-sizing: border-box;
+}
+
+form .form-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    margin: 0 0 24px;
+    width: 100%;
+}
+
+form strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+
+.form-section {
+    width: 100%;
+    margin: 0 0 20px;
+}
+
+.form-actions {
+    width: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.form-row .form-section {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.filters-group {
+    padding: 16px 20px 12px;
+    border-radius: 18px;
+    background: rgba(63, 112, 190, 0.08);
+    border: 1px solid rgba(63, 112, 190, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.filters-group strong {
+    margin-bottom: 6px;
+}
+
+.checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+    row-gap: 8px;
+}
+
+.filters-group label {
+    margin: 0;
+    justify-content: flex-start;
+}
+
 form label {
     display: inline-flex;
     align-items: center;

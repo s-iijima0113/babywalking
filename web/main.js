@@ -65,14 +65,17 @@ async function loadFacilities() {
 }
 
 function updateMarkers() {
+    if (!map) {
+        return;
+    }
     // 古いマーカー削除
     markers.forEach(m => m.remove());
     markers = [];
 
-    const showToilet = document.getElementById('toilet').checked;
-    const showNursing = document.getElementById('nursing').checked;
-    const showSaicoin = document.getElementById('saicoin').checked;
-    const showTamapon = document.getElementById('tamapon').checked;
+    const showToilet = isChecked('toilet');
+    const showNursing = isChecked('nursing');
+    const showSaicoin = isChecked('saicoin');
+    const showTamapon = isChecked('tamapon');
 
     facilities.forEach(facility => {
         if (
