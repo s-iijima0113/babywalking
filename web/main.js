@@ -1,15 +1,37 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoic2F0b21paWkiLCJhIjoiY21kemViendyMGIzdzJrb2ltODFqZzdiZCJ9.oida2Ztmk9t7Gu7JQt1Qsw';
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v11',
+    center: [139.647238, 35.86236], //自宅
+    zoom: 15
+});
 
-let map;
-let directionsControl;
+const directionsControl = new MapboxDirections({
+    accessToken: mapboxgl.accessToken,
+    unit: 'metric',
+    profile: 'mapbox/walking',
+    alternatives: false,
+    controls: {
+        inputs: false,
+        instructions: true
+    },
+    language: 'ja'
+});
+
 let mapLoaded = false;
+
+map.on('load', () => {
+    mapLoaded = true;
+    map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
+    map.addControl(directionsControl, 'top-right');
+});
 
 //facilitiedAPI取得
 let facilities = [];
 let coins = [];
 let markers = [];
 
-let routeMessageElement;
+const routeMessageElement = document.getElementById('route-message');
 
 function updateRouteMessage(message, isError = false) {
     if (!routeMessageElement) {
@@ -139,11 +161,6 @@ function updateMarkers() {
     });
 }
 
-function isChecked(id) {
-    const element = document.getElementById(id);
-    return Boolean(element && element.checked);
-}
-
 function interpretBoolean(value) {
     if (Array.isArray(value)) {
         return value.some(interpretBoolean);
@@ -250,40 +267,6 @@ function handleFormSubmit(event) {
 
 // チェックボックスとフォームにイベント追加
 document.addEventListener('DOMContentLoaded', () => {
-    routeMessageElement = document.getElementById('route-message');
-
-    map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v11',
-        center: [139.647238, 35.86236], //自宅
-        zoom: 15
-    });
-
-    directionsControl = new MapboxDirections({
-        accessToken: mapboxgl.accessToken,
-        unit: 'metric',
-        profile: 'mapbox/walking',
-        alternatives: false,
-        controls: {
-            inputs: false,
-            instructions: true
-        },
-        language: 'ja'
-    });
-
-    map.on('load', () => {
-        mapLoaded = true;
-        map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
-        map.addControl(directionsControl, 'top-right');
-        map.resize();
-    });
-
-    window.addEventListener('resize', () => {
-        if (mapLoaded) {
-            map.resize();
-        }
-    });
-
     updateRouteMessage('条件を選んで「送信」を押すと、お散歩ルートが地図に表示されます。');
 
     const checkboxIds = ['toilet', 'nursing', 'saicoin', 'tamapon'];
