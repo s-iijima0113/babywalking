@@ -292,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             language: 'ja'
         });
+        map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
     } else {
         directionsControl = null;
         console.warn('MapboxDirections が読み込めなかったため、ルート表示をマーカーに切り替えます。');
@@ -338,3 +339,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadFacilities();
 });
+
+
