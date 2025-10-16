@@ -1,24 +1,173 @@
-html{
-    height: 100%;
+body {
+    margin: 0;
+    padding: 36px 16px 64px;
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background: linear-gradient(180deg, #fefefe 0%, #f1f7ff 100%);
+    color: #1b2a4b;
+    display: flex;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.page {
+    width: min(360px, 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.page-header {
+    text-align: center;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: clamp(28px, 6vw, 40px);
+    letter-spacing: 0.08em;
+}
+
+.page-header p {
+    margin: 6px 0 0;
+    font-size: 0.95rem;
+    color: rgba(27, 42, 75, 0.72);
+}
+
+form {
+    width: 100%;
+    padding: 24px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 16px 40px rgba(27, 42, 75, 0.14);
+    box-sizing: border-box;
+}
+
+.map-panel {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+#map {
+    width: 100%;
+    height: clamp(280px, 52vh, 420px);
+    min-height: 280px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(31, 71, 136, 0.16);
+}
+
+.route-message {
+    margin: 0;
+    min-height: 1.5rem;
+    font-weight: 600;
+    color: #0f5ba5;
+    text-align: center;
+}
+
+.route-message--error {
+    color: #c0392b;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+form strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.filters-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-section {
     width: 100%;
 }
 
-body {
-    text-align: center;
-    height: 100%;
-    width: 100%;
-    }
+.filters-group {
+    padding: 16px 18px 12px;
+    border-radius: 16px;
+    background: rgba(63, 112, 190, 0.08);
+    border: 1px solid rgba(63, 112, 190, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
 
-#map{
-    height: 50%;
-    width: 50%;
-    margin: 0 auto;
+.checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+    row-gap: 8px;
+}
+
+.filters-group label,
+form label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+}
+
+.filters-group label {
+    margin: 0;
 }
 
 form label {
-    display: inline-block;
-    margin-right: 20px;
     cursor: pointer;
-    vertical-align: middle;
+    margin: 0 16px 8px 0;
+}
+
+form input[type="range"] {
+    width: 100%;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+}
+
+button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 32px;
+    border-radius: 9999px;
+    border: none;
+    background: linear-gradient(135deg, #3da9fc 0%, #457df7 100%);
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(69, 125, 247, 0.25);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(69, 125, 247, 0.32);
+}
+
+button[type="submit"]:active {
+    transform: translateY(0);
+    box-shadow: 0 8px 18px rgba(69, 125, 247, 0.28);
+}
+
+@media (max-width: 520px) {
+    form label {
+        display: flex;
+        margin-right: 0;
+    }
+
+    .checkbox-list {
+        grid-template-columns: 1fr;
+    }
 }
 
