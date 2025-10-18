@@ -61,6 +61,8 @@ const FEEL_SPOTS = [
 
 let map;
 let mapLoaded = false;
+let fallbackDestinationMarker;
+let defaultOrigin;
 
 //facilitiedAPI取得
 let facilities = [];
@@ -440,13 +442,25 @@ function adjustCamera(routeCoordinates, spots) {
     if (!mapLoaded || !routeCoordinates.length) {
         return;
     }
-    const allPoints = [...routeCoordinates, ...spots.map(spot => [spot.lng, spot.lat])];
-    const validPoints = allPoints.filter(point =>
-        Array.isArray(point) && point.length === 2 &&
-        Number.isFinite(point[0]) && Number.isFinite(point[1])
-    );
-    if (!validPoints.length) {
-        return;
+
+    const label = type === 'coin' ? data.name : data.name || 'スポット';
+
+    const currentOrigin = defaultOrigin || map.getCenter();
+    const canUseDirections = directionsControl &&
+        typeof directionsControl.setOrigin === 'function' &&
+        typeof directionsControl.setDestination === 'function';
+
+    if (canUseDirections) {
+        directionsControl.setOrigin([currentOrigin.lng, currentOrigin.lat]);
+        directionsControl.setDestination([lng, lat]);
+        clearFallbackMarker();
+        updateRouteMessage(`${label} までの徒歩ルートを表示しました。`);
+    } else {
+        clearFallbackMarker();
+        fallbackDestinationMarker = new mapboxgl.Marker()
+            .setLngLat([lng, lat])
+            .addTo(map);
+        updateRouteMessage(`${label} の位置を地図に表示しました。`);
     }
     const bounds = validPoints.reduce((acc, coord) => {
         if (!acc) {
@@ -473,6 +487,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     map.on('load', () => {
         mapLoaded = true;
+        if (!defaultOrigin) {
+            const center = map.getCenter();
+            defaultOrigin = { lng: center.lng, lat: center.lat };
+        }
         try {
             map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
         } catch (error) {
