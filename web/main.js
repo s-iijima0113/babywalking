@@ -4,6 +4,7 @@ let map;
 let directionsControl;
 let mapLoaded = false;
 let fallbackDestinationMarker;
+let defaultOrigin;
 
 //facilitiedAPI取得
 let facilities = [];
@@ -248,13 +249,13 @@ function handleFormSubmit(event) {
 
     const label = type === 'coin' ? data.name : data.name || 'スポット';
 
-    const origin = map.getCenter();
+    const currentOrigin = defaultOrigin || map.getCenter();
     const canUseDirections = directionsControl &&
         typeof directionsControl.setOrigin === 'function' &&
         typeof directionsControl.setDestination === 'function';
 
     if (canUseDirections) {
-        directionsControl.setOrigin([origin.lng, origin.lat]);
+        directionsControl.setOrigin([currentOrigin.lng, currentOrigin.lat]);
         directionsControl.setDestination([lng, lat]);
         clearFallbackMarker();
         updateRouteMessage(`${label} までの徒歩ルートを表示しました。`);
@@ -300,6 +301,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     map.on('load', () => {
         mapLoaded = true;
+        if (!defaultOrigin) {
+            const center = map.getCenter();
+            defaultOrigin = { lng: center.lng, lat: center.lat };
+        }
         try {
             map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
         } catch (error) {
