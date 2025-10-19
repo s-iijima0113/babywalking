@@ -520,6 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         drawStartMarker(START_COORDINATES);
         map.resize();
+        
     });
 
     window.addEventListener('resize', () => {
@@ -545,4 +546,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadFacilities();
     loadFeelSpots();
+    map.addControl(new MapboxLanguage({ defaultLanguage: 'ja' }));
 });
