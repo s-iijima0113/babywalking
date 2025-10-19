@@ -1,63 +1,12 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoic2F0b21paWkiLCJhIjoiY21kemViendyMGIzdzJrb2ltODFqZzdiZCJ9.oida2Ztmk9t7Gu7JQt1Qsw';
 
 const WALKING_SPEED_METERS_PER_MIN = 70;
-const DEFAULT_ROUTE_RATIO = 1.35;
-const ELLIPSE_POINTS = 120;
+const MAX_RANDOM_FEEL_SPOTS = 3;
+const START_COORDINATES = { lng: 139.647238, lat: 35.86236 };
 const EMPTY_ROUTE = {
     type: 'FeatureCollection',
     features: []
 };
-
-const FEEL_SPOTS = [
-    {
-        id: 'spot-keyaki-hiroba',
-        name: 'けやきひろば',
-        feel: ['meet-up', 'shopping'],
-        lng: 139.6339,
-        lat: 35.8936,
-        description: 'イベントやマルシェが開かれる開放的な広場。'
-    },
-    {
-        id: 'spot-omiya-park',
-        name: '大宮公園',
-        feel: ['nature', 'meet-up'],
-        lng: 139.6336,
-        lat: 35.9084,
-        description: '木陰が気持ちいい自然豊かな定番スポット。'
-    },
-    {
-        id: 'spot-cocoon',
-        name: 'コクーンシティ',
-        feel: ['shopping', 'meet-up'],
-        lng: 139.6339,
-        lat: 35.9004,
-        description: 'ランチやショッピングを楽しめる大型商業施設。'
-    },
-    {
-        id: 'spot-roastery',
-        name: 'Roastery Saitama',
-        feel: ['cafe', 'meet-up'],
-        lng: 139.6478,
-        lat: 35.8619,
-        description: '自家焙煎コーヒーが人気の落ち着いたカフェ。'
-    },
-    {
-        id: 'spot-bonheur',
-        name: 'Cafe Bonheur',
-        feel: ['cafe'],
-        lng: 139.6474,
-        lat: 35.8721,
-        description: 'ベビーカーでも入りやすいスイーツカフェ。'
-    },
-    {
-        id: 'spot-minuma',
-        name: '見沼たんぼ遊歩道',
-        feel: ['nature'],
-        lng: 139.6805,
-        lat: 35.9051,
-        description: 'のんびり歩ける水辺の散策コース。'
-    }
-];
 
 let map;
 let mapLoaded = false;
@@ -68,6 +17,7 @@ let coins = [];
 let markers = [];
 let feelMarkers = [];
 let startMarker = null;
+let feelSpots = [];
 
 let routeMessageElement;
 
@@ -99,6 +49,19 @@ async function loadFacilities() {
     } catch (error) {
         console.error('データの取得に失敗しました', error);
         updateRouteMessage('データの取得に失敗しました。時間をおいて再度お試しください。', true);
+    }
+}
+
+async function loadFeelSpots() {
+    try {
+        const response = await fetch('/api/feel-spots');
+        if (!response.ok) {
+            throw new Error('feel-spots API error');
+        }
+        feelSpots = await response.json();
+    } catch (error) {
+        console.error('Feel スポットの取得に失敗しました', error);
+        updateRouteMessage('スポット情報の取得に失敗しました。時間をおいて再度お試しください。', true);
     }
 }
 
@@ -219,13 +182,18 @@ function handleFormSubmit(event) {
         return;
     }
 
+    if (!feelSpots.length) {
+        updateRouteMessage('スポット情報を読み込めませんでした。ページを再読み込みしてお試しください。', true);
+        return;
+    }
+
     const walkingTimeMinutes = Number(formData.get('walkTime')) || 0;
     if (!Number.isFinite(walkingTimeMinutes) || walkingTimeMinutes <= 0) {
         updateRouteMessage('Walking time を選択してください。', true);
         return;
     }
 
-    const matchingFeelSpots = FEEL_SPOTS.filter(spot =>
+    const matchingFeelSpots = feelSpots.filter(spot =>
         spot.feel.some(feel => selectedFeels.includes(feel))
     );
 
@@ -237,26 +205,27 @@ function handleFormSubmit(event) {
         return;
     }
 
-    updateFeelMarkers(matchingFeelSpots);
-
-    const center = calculateCenter(matchingFeelSpots);
-    drawStartMarker(center);
-
     const totalMeters = walkingTimeMinutes * WALKING_SPEED_METERS_PER_MIN;
-    const routeCoordinates = buildEllipseRoute(center, totalMeters, matchingFeelSpots);
-    if (!routeCoordinates.length) {
-        updateRouteMessage('ルートを描画できませんでした。別の条件をお試しください。', true);
+    const routePlan = buildWalkingRoute(START_COORDINATES, matchingFeelSpots, totalMeters);
+
+    if (!routePlan.coordinates.length || !routePlan.spots.length) {
+        updateRouteMessage('条件に合うルートを描画できませんでした。別の条件をお試しください。', true);
+        clearFeelMarkers();
         clearRouteLine();
-        clearStartMarker();
+        drawStartMarker(START_COORDINATES);
         return;
     }
 
-    updateRouteLine(routeCoordinates);
-    adjustCamera(routeCoordinates, matchingFeelSpots);
+    updateFeelMarkers(routePlan.spots);
+    drawStartMarker(START_COORDINATES);
+    updateRouteLine(routePlan.coordinates);
+    adjustCamera(routePlan.coordinates, routePlan.spots);
 
     const feelSummary = new Intl.ListFormat('ja', { style: 'short', type: 'conjunction' })
         .format([...new Set(matchingFeelSpots.flatMap(spot => spot.feel.filter(f => selectedFeels.includes(f))))]);
-    updateRouteMessage(`${feelSummary} の気分に合わせて約 ${walkingTimeMinutes} 分のお散歩ルートを描画しました。`);
+    const spotSummary = new Intl.ListFormat('ja', { style: 'short', type: 'conjunction' })
+        .format(routePlan.spots.map(spot => spot.name));
+    updateRouteMessage(`${feelSummary} の気分に合わせて約 ${walkingTimeMinutes} 分で ${spotSummary} を巡るお散歩ルートを描画しました。`);
 }
 
 function clearFeelMarkers() {
@@ -289,23 +258,7 @@ function updateFeelMarkers(spots) {
     });
 }
 
-function calculateCenter(spots) {
-    if (!spots.length) {
-        const center = map.getCenter();
-        return { lng: center.lng, lat: center.lat };
-    }
-    const totals = spots.reduce((acc, spot) => {
-        acc.lng += spot.lng;
-        acc.lat += spot.lat;
-        return acc;
-    }, { lng: 0, lat: 0 });
-    return {
-        lng: totals.lng / spots.length,
-        lat: totals.lat / spots.length
-    };
-}
-
-function drawStartMarker(center) {
+function drawStartMarker(position) {
     if (!map) {
         return;
     }
@@ -313,97 +266,123 @@ function drawStartMarker(center) {
         startMarker.remove();
     }
     startMarker = new mapboxgl.Marker({ color: '#ff6b6b' })
-        .setLngLat([center.lng, center.lat])
+        .setLngLat([position.lng, position.lat])
         .setPopup(new mapboxgl.Popup({ offset: 12 }).setHTML('<strong>スタート & ゴール</strong>'))
         .addTo(map);
 }
 
-function metersPerDegreeLatitude() {
-    return 111320;
-}
-
-function metersPerDegreeLongitude(latitude) {
-    const latRad = latitude * Math.PI / 180;
-    const meters = 111320 * Math.cos(latRad);
-    return Math.max(meters, 1); // 回転計算時のゼロ割防止
-}
-
-function buildEllipseRoute(center, totalMeters, anchorSpots) {
+function buildWalkingRoute(start, candidateSpots, totalMeters) {
     if (!Number.isFinite(totalMeters) || totalMeters <= 0) {
-        return [];
+        return { coordinates: [], spots: [] };
     }
 
-    const axes = deriveEllipseAxes(totalMeters);
-    if (axes.a <= 0 || axes.b <= 0) {
-        return [];
-    }
+    const shuffled = shuffleArray(candidateSpots);
+    const pathPoints = [{ lng: start.lng, lat: start.lat }];
+    const selectedSpots = [];
 
-    const orientation = computeOrientation(center, anchorSpots);
-    const cos = Math.cos(orientation);
-    const sin = Math.sin(orientation);
-    const latMeters = metersPerDegreeLatitude();
-    const lngMeters = metersPerDegreeLongitude(center.lat);
-
-    const coordinates = [];
-    for (let i = 0; i <= ELLIPSE_POINTS; i++) {
-        const theta = (i / ELLIPSE_POINTS) * Math.PI * 2;
-        const x = axes.a * Math.cos(theta);
-        const y = axes.b * Math.sin(theta);
-        const rotatedX = x * cos - y * sin;
-        const rotatedY = x * sin + y * cos;
-
-        const lng = center.lng + (rotatedX / lngMeters);
-        const lat = center.lat + (rotatedY / latMeters);
-        coordinates.push([lng, lat]);
-    }
-
-    if (coordinates.length) {
-        const first = coordinates[0];
-        const last = coordinates[coordinates.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-            coordinates.push([first[0], first[1]]);
+    for (const spot of shuffled) {
+        if (selectedSpots.length >= MAX_RANDOM_FEEL_SPOTS) {
+            break;
+        }
+        const trialPoints = [...pathPoints, spot, start];
+        const distance = computeRouteDistanceMeters(trialPoints);
+        if (distance <= totalMeters) {
+            selectedSpots.push(spot);
+            pathPoints.push(spot);
         }
     }
 
+    if (!selectedSpots.length) {
+        const fallback = [...candidateSpots].sort((a, b) => {
+            const distanceA = computeRouteDistanceMeters([start, a, start]);
+            const distanceB = computeRouteDistanceMeters([start, b, start]);
+            return distanceA - distanceB;
+        });
+        for (const spot of fallback) {
+            const distance = computeRouteDistanceMeters([start, spot, start]);
+            if (distance <= totalMeters) {
+                return {
+                    coordinates: densifyRouteCoordinates([start, spot, start]),
+                    spots: [spot]
+                };
+            }
+        }
+        return { coordinates: [], spots: [] };
+    }
+
+    pathPoints.push({ lng: start.lng, lat: start.lat });
+    return {
+        coordinates: densifyRouteCoordinates(pathPoints),
+        spots: selectedSpots
+    };
+}
+
+function computeRouteDistanceMeters(points) {
+    if (!Array.isArray(points) || points.length < 2) {
+        return 0;
+    }
+    let total = 0;
+    for (let i = 1; i < points.length; i++) {
+        total += haversineDistanceMeters(points[i - 1], points[i]);
+    }
+    return total;
+}
+
+function haversineDistanceMeters(pointA, pointB) {
+    if (!pointA || !pointB) {
+        return 0;
+    }
+    const R = 6371000;
+    const lat1 = toRadians(pointA.lat);
+    const lat2 = toRadians(pointB.lat);
+    const deltaLat = toRadians(pointB.lat - pointA.lat);
+    const deltaLng = toRadians(pointB.lng - pointA.lng);
+
+    const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+        Math.cos(lat1) * Math.cos(lat2) *
+        Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function toRadians(degrees) {
+    return degrees * Math.PI / 180;
+}
+
+function densifyRouteCoordinates(points) {
+    if (!Array.isArray(points) || points.length < 2) {
+        return [];
+    }
+    const coordinates = [];
+    for (let i = 0; i < points.length - 1; i++) {
+        const start = points[i];
+        const end = points[i + 1];
+        const segmentDistance = haversineDistanceMeters(start, end);
+        const steps = Math.max(2, Math.ceil(segmentDistance / 60));
+        for (let step = 0; step < steps; step++) {
+            const t = steps === 1 ? 1 : step / (steps - 1);
+            const lng = start.lng + (end.lng - start.lng) * t;
+            const lat = start.lat + (end.lat - start.lat) * t;
+            if (!coordinates.length || coordinates[coordinates.length - 1][0] !== lng || coordinates[coordinates.length - 1][1] !== lat) {
+                coordinates.push([lng, lat]);
+            }
+        }
+    }
+    const last = points[points.length - 1];
+    const lastCoord = coordinates[coordinates.length - 1];
+    if (!lastCoord || lastCoord[0] !== last.lng || lastCoord[1] !== last.lat) {
+        coordinates.push([last.lng, last.lat]);
+    }
     return coordinates;
 }
 
-function deriveEllipseAxes(totalMeters) {
-    const target = Math.max(totalMeters, 200);
-    let a = target / (2 * Math.PI);
-    for (let i = 0; i < 8; i++) {
-        const b = a / DEFAULT_ROUTE_RATIO;
-        const circumference = approximateEllipseCircumference(a, b);
-        if (circumference === 0) {
-            break;
-        }
-        const scale = target / circumference;
-        a *= scale;
+function shuffleArray(items) {
+    const array = [...items];
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
-    return { a, b: a / DEFAULT_ROUTE_RATIO };
-}
-
-function approximateEllipseCircumference(a, b) {
-    const h = Math.pow((a - b) / (a + b), 2);
-    return Math.PI * (a + b) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
-}
-
-function computeOrientation(center, spots) {
-    if (!spots.length) {
-        return 0;
-    }
-    const lngMeters = metersPerDegreeLongitude(center.lat);
-    const latMeters = metersPerDegreeLatitude();
-    let sumX = 0;
-    let sumY = 0;
-    spots.forEach(spot => {
-        sumX += (spot.lng - center.lng) * lngMeters;
-        sumY += (spot.lat - center.lat) * latMeters;
-    });
-    if (Math.abs(sumX) < 1e-6 && Math.abs(sumY) < 1e-6) {
-        return 0;
-    }
-    return Math.atan2(sumY, sumX);
+    return array;
 }
 
 function updateRouteLine(coordinates) {
@@ -497,6 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'line-opacity': 0.85
             }
         });
+        drawStartMarker(START_COORDINATES);
         map.resize();
     });
 
@@ -522,4 +502,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadFacilities();
+    loadFeelSpots();
 });

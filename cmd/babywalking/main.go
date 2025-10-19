@@ -22,6 +22,9 @@ func main() {
 	//アプリ終了時にDB切断
 	defer db.DB.Close()
 
+	// feel_spotsテーブル準備
+	db.EnsureFeelSpotsTable()
+
 	//facilitiesテーブルにデータが存在するかチェック
 	//Todo バッチ処理にする
 	var exists = db.CheckExists()
@@ -87,6 +90,12 @@ func main() {
 
 	//CoinAPI実行
 	db.CoinAPI()
+
+	// FeelSpotAPI 実行
+	db.FeelSpotAPI()
+
+	// feel_spots のデータ投入
+	db.SeedFeelSpots()
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
