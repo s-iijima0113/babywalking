@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	_ "github.com/lib/pq" // PostgreSQL driver
+	pq "github.com/lib/pq"
 )
 
 var DB *sql.DB
@@ -28,6 +28,139 @@ func InitDB() {
 	}
 
 	fmt.Println("DBに接続しました")
+}
+
+// feel_spotsテーブルに登録するスポット情報
+type feelSpotSeed struct {
+	Name        string
+	Feel        []string
+	Lat         float64
+	Lng         float64
+	Description string
+}
+
+var defaultFeelSpotSeeds = []feelSpotSeed{
+	{
+		Name:        "けやきひろば",
+		Feel:        []string{"meet-up", "shopping"},
+		Lat:         35.8936,
+		Lng:         139.6339,
+		Description: "イベントやマルシェが開かれる開放的な広場。",
+	},
+	{
+		Name:        "大宮公園",
+		Feel:        []string{"nature", "meet-up"},
+		Lat:         35.9084,
+		Lng:         139.6336,
+		Description: "木陰が気持ちいい自然豊かな定番スポット。",
+	},
+	{
+		Name:        "コクーンシティ",
+		Feel:        []string{"shopping", "meet-up"},
+		Lat:         35.9004,
+		Lng:         139.6339,
+		Description: "ランチやショッピングを楽しめる大型商業施設。",
+	},
+	{
+		Name:        "Roastery Saitama",
+		Feel:        []string{"cafe", "meet-up"},
+		Lat:         35.8619,
+		Lng:         139.6478,
+		Description: "自家焙煎コーヒーが人気の落ち着いたカフェ。",
+	},
+	{
+		Name:        "Cafe Bonheur",
+		Feel:        []string{"cafe"},
+		Lat:         35.8721,
+		Lng:         139.6474,
+		Description: "ベビーカーでも入りやすいスイーツカフェ。",
+	},
+	{
+		Name:        "見沼たんぼ遊歩道",
+		Feel:        []string{"nature"},
+		Lat:         35.9051,
+		Lng:         139.6805,
+		Description: "のんびり歩ける水辺の散策コース。",
+	},
+}
+
+// FeelSpot は散策ルートに組み込むスポットを表します。
+type FeelSpot struct {
+	ID          int      `json:"id"`
+	Name        string   `json:"name"`
+	Feel        []string `json:"feel"`
+	Lat         float64  `json:"lat"`
+	Lng         float64  `json:"lng"`
+	Description string   `json:"description"`
+}
+
+// EnsureFeelSpotsTable は feel_spots テーブルを作成します。
+func EnsureFeelSpotsTable() {
+	const ddl = `CREATE TABLE IF NOT EXISTS feel_spots (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        feel TEXT[] NOT NULL,
+        lat DOUBLE PRECISION NOT NULL,
+        lng DOUBLE PRECISION NOT NULL,
+        description TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+)`
+
+	if _, err := DB.Exec(ddl); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// CheckExistsFeelSpots は feel_spots テーブルにレコードが存在するか確認します。
+func CheckExistsFeelSpots() bool {
+	var exists bool
+	err := DB.QueryRow(`SELECT EXISTS (SELECT 1 FROM feel_spots)`).Scan(&exists)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return exists
+}
+
+// AddDbFeelSpots は初期スポットデータを登録します。
+func AddDbFeelSpots(seeds []feelSpotSeed) {
+	const sqlStatement = `INSERT INTO feel_spots (name, feel, lat, lng, description, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $6)`
+
+	tx, err := DB.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tx.Rollback()
+
+	now := time.Now()
+
+	for _, seed := range seeds {
+		if _, err := tx.Exec(sqlStatement,
+			seed.Name,
+			pq.Array(seed.Feel),
+			seed.Lat,
+			seed.Lng,
+			seed.Description,
+			now,
+		); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("feel_spotsデータを挿入しました")
+}
+
+// SeedFeelSpots は feel_spots テーブルに初期データを投入します。
+func SeedFeelSpots() {
+	if CheckExistsFeelSpots() {
+		fmt.Println("すでにfeel_spotsデータが存在するのでINSERTはスキップします")
+		return
+	}
+	AddDbFeelSpots(defaultFeelSpotSeeds)
 }
 
 // facilitiesテーブルデータの有無をチェック
@@ -288,5 +421,37 @@ func CoinAPI() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(coins)
+	})
+}
+
+// FeelSpotAPI は散策スポットを返す API を提供します。
+func FeelSpotAPI() {
+	http.HandleFunc("/api/feel-spots", func(w http.ResponseWriter, r *http.Request) {
+		rows, err := DB.Query("SELECT id, name, feel, lat, lng, description FROM feel_spots ORDER BY id")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var spots []FeelSpot
+		for rows.Next() {
+			var spot FeelSpot
+			var feel pq.StringArray
+			if err := rows.Scan(&spot.ID, &spot.Name, &feel, &spot.Lat, &spot.Lng, &spot.Description); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			spot.Feel = append(spot.Feel, feel...)
+			spots = append(spots, spot)
+		}
+
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(spots)
 	})
 }
