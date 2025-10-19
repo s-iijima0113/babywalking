@@ -2,6 +2,7 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoic2F0b21paWkiLCJhIjoiY21kemViendyMGIzdzJrb2ltO
 
 const WALKING_SPEED_METERS_PER_MIN = 70;
 const MAX_RANDOM_FEEL_SPOTS = 3;
+const MAX_ROUTE_ATTEMPTS = 12;
 const START_COORDINATES = { lng: 139.647238, lat: 35.86236 };
 const EMPTY_ROUTE = {
     type: 'FeatureCollection',
@@ -18,6 +19,7 @@ let markers = [];
 let feelMarkers = [];
 let startMarker = null;
 let feelSpots = [];
+let lastRouteSignature = null;
 
 let routeMessageElement;
 
@@ -184,6 +186,7 @@ function handleFormSubmit(event) {
 
     if (!feelSpots.length) {
         updateRouteMessage('スポット情報を読み込めませんでした。ページを再読み込みしてお試しください。', true);
+        drawStartMarker(START_COORDINATES);
         return;
     }
 
@@ -201,18 +204,20 @@ function handleFormSubmit(event) {
         updateRouteMessage('選択した Feel に該当するスポットが見つかりませんでした。', true);
         clearFeelMarkers();
         clearRouteLine();
-        clearStartMarker();
+        drawStartMarker(START_COORDINATES);
+        lastRouteSignature = null;
         return;
     }
 
     const totalMeters = walkingTimeMinutes * WALKING_SPEED_METERS_PER_MIN;
-    const routePlan = buildWalkingRoute(START_COORDINATES, matchingFeelSpots, totalMeters);
+    const routePlan = planRandomRoute(START_COORDINATES, matchingFeelSpots, totalMeters, lastRouteSignature);
 
     if (!routePlan.coordinates.length || !routePlan.spots.length) {
         updateRouteMessage('条件に合うルートを描画できませんでした。別の条件をお試しください。', true);
         clearFeelMarkers();
         clearRouteLine();
         drawStartMarker(START_COORDINATES);
+        lastRouteSignature = null;
         return;
     }
 
@@ -220,6 +225,7 @@ function handleFormSubmit(event) {
     drawStartMarker(START_COORDINATES);
     updateRouteLine(routePlan.coordinates);
     adjustCamera(routePlan.coordinates, routePlan.spots);
+    lastRouteSignature = computeRouteSignature(routePlan);
 
     const feelSummary = new Intl.ListFormat('ja', { style: 'short', type: 'conjunction' })
         .format([...new Set(matchingFeelSpots.flatMap(spot => spot.feel.filter(f => selectedFeels.includes(f))))]);
@@ -231,13 +237,6 @@ function handleFormSubmit(event) {
 function clearFeelMarkers() {
     feelMarkers.forEach(marker => marker.remove());
     feelMarkers = [];
-}
-
-function clearStartMarker() {
-    if (startMarker) {
-        startMarker.remove();
-        startMarker = null;
-    }
 }
 
 function updateFeelMarkers(spots) {
@@ -271,16 +270,45 @@ function drawStartMarker(position) {
         .addTo(map);
 }
 
-function buildWalkingRoute(start, candidateSpots, totalMeters) {
+function planRandomRoute(start, candidateSpots, totalMeters, previousSignature) {
+    if (!Array.isArray(candidateSpots) || !candidateSpots.length) {
+        return { coordinates: [], spots: [] };
+    }
+
+    let fallbackRoute = null;
+
+    for (let attempt = 0; attempt < MAX_ROUTE_ATTEMPTS; attempt++) {
+        const shuffled = shuffleArray(candidateSpots);
+        const route = buildWalkingRoute(start, shuffled, totalMeters);
+        if (!route.coordinates.length || !route.spots.length) {
+            if (!fallbackRoute) {
+                fallbackRoute = route;
+            }
+            continue;
+        }
+
+        const signature = computeRouteSignature(route);
+        if (!signature || signature !== previousSignature) {
+            return route;
+        }
+
+        if (!fallbackRoute) {
+            fallbackRoute = route;
+        }
+    }
+
+    return fallbackRoute || { coordinates: [], spots: [] };
+}
+
+function buildWalkingRoute(start, orderedCandidateSpots, totalMeters) {
     if (!Number.isFinite(totalMeters) || totalMeters <= 0) {
         return { coordinates: [], spots: [] };
     }
 
-    const shuffled = shuffleArray(candidateSpots);
     const pathPoints = [{ lng: start.lng, lat: start.lat }];
     const selectedSpots = [];
 
-    for (const spot of shuffled) {
+    for (const spot of orderedCandidateSpots) {
         if (selectedSpots.length >= MAX_RANDOM_FEEL_SPOTS) {
             break;
         }
@@ -293,7 +321,7 @@ function buildWalkingRoute(start, candidateSpots, totalMeters) {
     }
 
     if (!selectedSpots.length) {
-        const fallback = [...candidateSpots].sort((a, b) => {
+        const fallback = [...orderedCandidateSpots].sort((a, b) => {
             const distanceA = computeRouteDistanceMeters([start, a, start]);
             const distanceB = computeRouteDistanceMeters([start, b, start]);
             return distanceA - distanceB;
@@ -383,6 +411,20 @@ function shuffleArray(items) {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+function computeRouteSignature(route) {
+    if (!route || !Array.isArray(route.spots) || !route.spots.length) {
+        return null;
+    }
+    return route.spots
+        .map(spot => {
+            if (spot && spot.id !== undefined && spot.id !== null) {
+                return String(spot.id);
+            }
+            return spot && spot.name ? spot.name : '';
+        })
+        .join('>');
 }
 
 function updateRouteLine(coordinates) {
